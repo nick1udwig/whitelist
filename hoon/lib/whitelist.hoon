@@ -2,7 +2,7 @@
 /+  group
 |%
 ++  handle-command
-  |=  [comm=whitelist-command =whitelist client-path=(unit path) =bowl]
+  |=  [comm=whitelist-command =whitelist client-path=(unit path) =bowl:gall]
   ^-  whitelist-return
   ?-  -.comm
       %add-whitelist
@@ -38,21 +38,22 @@
   ==
 ::
 ++  clean-client-list
-  |=  [client-path=(unit path) =bowl =whitelist]
+  |=  [client-path=(unit path) =bowl:gall =whitelist]
   ^-  whitelist-return
   =/  to-kick=(set ship)
     %-  silt
-    %+  murn  ~(tap in clients.host-info)
+    %+  murn  ~(tap in users.whitelist)
     |=  c=ship  ^-  (unit ship)
     ?:((is-whitelisted c whitelist bowl) ~ `c)
-  :_  (~(dif in whitelist) to-kick)
+  =.  users.whitelist  (~(dif in users.whitelist) to-kick)
+  :_  whitelist
   ?~  client-path
     ~
   %+  turn  ~(tap in to-kick)
   |=(c=ship [%give %kick ~[u.client-path] `c])
 ::
 ++  is-whitelisted
-  |=  [user=ship =whitelist =bowl]
+  |=  [user=ship =whitelist =bowl:gall]
   ^-  ?
   |^
   ?|  public.whitelist
@@ -62,10 +63,11 @@
       (in-group bowl)
   ==
   ++  is-kid
-    |=  =bowl
+    |=  =bowl:gall
     =(our.bowl (sein:title our.bowl now.bowl user))
+  ::
   ++  in-group
-    |=  =bowl
+    |=  =bowl:gall
     =/  gs  ~(tap in groups.whitelist)
     |-
     ?~  gs  %.n

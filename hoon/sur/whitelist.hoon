@@ -1,3 +1,4 @@
+/-  resource
 |%
 +$  whitelist
   $:  public=?
@@ -19,7 +20,7 @@
   ==
 ::
 +$  whitelist-return
-  $:  cards=(list card)
+  $:  cards=(list card:agent:gall)
       =whitelist
   ==
 --
