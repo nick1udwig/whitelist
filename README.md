@@ -84,7 +84,7 @@ When removing `users` from the `whitelist`, `%kick`s can be `%give`n to a `path`
 This behavior is controlled by the `client-path=(unit path)` argument of `handle-command`.
 If `~` is passed to `client-path`, no `%kick` `card`s will be returned.
 If a non-null `(unit path)` is given, however, `%kick`s will be issued on that `path`.
-For example, the snippet [above](/#modifying-the-whitelist) will not return any `%kick` `card`s, since `~` is passed for `client-path`.
+For example, the snippet [above](#modifying-the-whitelist) will not return any `%kick` `card`s, since `~` is passed for `client-path`.
 To modify it to kick on `/client-path`:
 
 ```
