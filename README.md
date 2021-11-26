@@ -1,8 +1,8 @@
 # Whitelist
 
-Tools to make whitelisting easier for providers.
+Restrict access to your provider Gall app with these plug-in library and types.
 
-## Interface
+## The `whitelist` type
 
 The `whitelist` type contains two `?`s: `public` and `kids`, and two `set`s: `users` and `groups`.
 
@@ -13,7 +13,7 @@ Attribute | Type             | Description
 `users`   | `(set ship)`     | Specific `@p`s to whom provider is accessible.
 `groups`  | `(set resource)` | Groups whose members will have access.
 
-If a ship is a member of one or more of these attributes, it will be whitelisted.
+If a ship is a member of one or more of these attributes, it will be whitelisted (see [Restricting access](#restricting-access) below).
 
 ## App state
 
@@ -24,19 +24,23 @@ It is recommended to initialize the `whitelist` with `public` and `kids` set to 
 
 To restrict access to a particular feature of the provider, say, a poke with a certain mark, branch on the `is-whitelisted` generator.
 This is the same pattern as restricting access to a poke to `our` and moons using `team:title`.
-For example, in the pseudocode below, pokes with `%paylod` mark are only served to ships belonging to the `whitelist`:
+For example, in the pseudocode below, pokes with `%payload` mark are only served to ships belonging to the `whitelist`:
 
 ```
-  %payload
-?.  (is-whitelisted:wl-lib src.bowl whitelist.state bowl)
-  :: Reject request: not on whitelist.
+?-    mark
+    %payload
+  ?.  (is-whitelisted:wl-lib src.bowl whitelist.state bowl)
+    :: Reject request: not on whitelist.
+    ::
+    `this
+  :: Accept request: on whitelist.
   ::
-  `this
-:: Accept request: on whitelist.
-::
-=^  cards  state
-(handle-payload:hc !<(payload vase))
-[cards this]
+  =^  cards  state
+  (handle-payload !<(payload vase))
+  [cards this]
+  :: Handle other marks...
+  ::
+==
 ```
 
 ## Modifying the `whitelist`
@@ -45,16 +49,20 @@ Add a poke mark of `%whitelist-command` to your Gall app.
 If your app state contains a `whitelist` as recommended, an example code snippet from a switch over poke marks is
 
 ```
-  %whitelist-command
-?>  (team:title our.bowl src.bowl)
-=^  cards  whitelist.state
-%:  handle-command:wl-lib
-    !<(whitelist-command:wl vase)
-    whitelist.state
-    ~
-    bowl
+?-    mark
+    %whitelist-command
+  ?>  (team:title our.bowl src.bowl)
+  =^  cards  whitelist.state
+  %:  handle-command:wl-lib
+      !<(whitelist-command:wl vase)
+      whitelist.state
+      ~
+      bowl
+  ==
+  [cards this]
+  :: Handle other marks...
+  ::
 ==
-[cards this]
 ```
 
 where `wl` and `wl-lib` are the faces given to `sur/whitelist.hoon` and `lib/whitelist.hoon`, respectively, upon import.
@@ -88,16 +96,20 @@ For example, the snippet [above](#modifying-the-whitelist) will not return any `
 To modify it to kick on `/client-path`:
 
 ```
-  %whitelist-command
-?>  (team:title our.bowl src.bowl)
-=^  cards  whitelist.state
-%:  handle-command:wl-lib
-    !<(whitelist-command:wl vase)
-    whitelist.state
-    [~ /client-path]
-    bowl
+?-    mark
+    %whitelist-command
+  ?>  (team:title our.bowl src.bowl)
+  =^  cards  whitelist.state
+  %:  handle-command:wl-lib
+      !<(whitelist-command:wl vase)
+      whitelist.state
+      [~ /client-path]
+      bowl
+  ==
+  [cards this]
+  :: Handle other marks...
+  ::
 ==
-[cards this]
 ```
 
 ## Whitelist in action
