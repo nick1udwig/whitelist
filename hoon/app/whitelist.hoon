@@ -7,7 +7,7 @@
 +$  card  card:agent:gall
 --
 ::
-=|  state-0
+=|  state-0:wl
 =*  state  -
 ::
 %-  agent:dbug
@@ -15,17 +15,79 @@
 ^-  agent:gall
 
 |_  =bowl:gall
-+*  this            .
-    def             ~(. (default-agent this %|) bowl)
-    io              ~(. agentio bowl)
++*  this  .
+    def   ~(. (default-agent this %|) bowl)
+    io    ~(. agentio bowl)
 ++  on-init   on-init:def
 ++  on-save   on-save:def
 ++  on-load   on-load:def
-++  on-watch  on-watch:def
-++  on-leave  on-leave:def
 ++  on-agent  on-agent:def
 ++  on-arvo   on-arvo:def
 ++  on-fail   on-fail:def
+::
+++  on-leave
+  |=  p=path
+  ^-  (quip card _this)
+  ?+    p  on-leave:def
+      [%customer ~]
+    `this
+  ==
+::
+++  on-watch
+  |=  p=path
+  ^-  (quip card _this)
+  ?+    p  on-watch:def
+      [%customer ~]
+    :_  this
+    %-  fact-init-kick:io
+    :-  %whitelist-customer
+    !>(`(unit customer:wl)`(~(get by customers) src.bowl))
+  ==
+::
+++  on-peek
+  |=  p=path
+  |^  ^-  (unit (unit cage))
+  ?+    p  on-peek:def
+      [%is-allowed @ @ ~]
+    =/  app-name=@tas  i.t.p
+    =/  src=@p         (slav %p i.t.t.p)
+    ``[%loob !>(`?`(is-allowed app-name src))]
+  ==
+  ::
+  ++  is-allowed
+    |=  [app-name=@tas user=@p]
+    |^  ^-  ?
+    ?~  permission=(~(get by permissions) app-name)  %.n
+    =*  blacklist  blacklist.u.permission
+    =*  whitelist  whitelist.u.permission
+    ?:  (~(has in blacklist) user)  %.n
+    =/  is-customer=?
+      ?~  customer=(~(get by customers) src)  %.n
+      %.n
+      ::  TODO:
+      ::  test expiry. if fails,
+      ::  test NFT existence
+    ?|  is-customer
+        public.whitelist
+        =(our.bowl user)
+        &(kids.whitelist is-kid)
+        (~(has in users.whitelist) user)
+        is-in-group
+    ==
+    ::
+    ++  is-kid
+      ^-  ?
+      =(our.bowl (sein:title our.bowl now.bowl user))
+    ::
+    ++  is-in-group
+      ^-  ?
+      =/  gs  ~(tap in groups.whitelist)
+      |-
+      ?~  gs  %.n
+      ?:  (~(is-member group bowl) user i.gs)  %.y
+      $(gs t.gs)
+    --
+  --
 ::
 ++  on-poke
   |=  [m=mark v=vase]
@@ -129,51 +191,6 @@
         %.  groups.target.act
         ~(dif in whitelist-groups.u.permission)
       ==
-    --
-  --
-::
-++  on-peek
-  |=  p=path
-  |^  ^-  (unit (unit cage))
-  ?+    path  on-peek:def
-      [%is-allowed @ @ ~]
-    =/  app-name=@tas  i.t.p
-    =/  src=@p         (slav %p i.t.t.p)
-    ``[%noun !>(`?`(is-allowed app-name src))]
-  ==
-  ::
-  ++  is-allowed
-    |=  [app-name=@tas user=@p]
-    |^  ^-  ?
-    ?~  permission=(~(get by permissions) app-name)  %.n
-    =*  blacklist  blacklist.u.permission
-    =*  whitelist  whitelist.u.permission
-    ?:  (~(has in blacklist) user)  %.n
-    =/  is-customer=?
-      ?~  customer=(~(get by customers) src)  %.n
-      %.n
-      ::  TODO: 
-      ::  test expiry. if fails,
-      ::  test NFT existence
-    ?|  is-customer
-        public.whitelist
-        =(our.bowl user)
-        &(kids.whitelist is-kid)
-        (~(has in users.whitelist) user)
-        is-in-group
-    ==
-    ::
-    ++  is-kid
-      ^-  ?
-      =(our.bowl (sein:title our.bowl now.bowl user))
-    ::
-    ++  is-in-group
-      ^-  ?
-      =/  gs  ~(tap in groups.whitelist)
-      |-
-      ?~  gs  %.n
-      ?:  (~(is-member group bowl) user i.gs)  %.y
-      $(gs t.gs)
     --
   --
 --
