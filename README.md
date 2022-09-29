@@ -22,14 +22,14 @@ It is recommended to initialize the `whitelist` with `public` and `kids` set to 
 
 ## Restricting access
 
-To restrict access to a particular feature of the provider, say, a poke with a certain mark, branch on the `is-whitelisted` generator.
+To restrict access to a particular feature of the provider, say, a poke with a certain mark, branch on the `is-allowed` generator.
 This is the same pattern as restricting access to a poke to `our` and moons using `team:title`.
 For example, in the pseudocode below, pokes with `%payload` mark are only served to ships belonging to the `whitelist`:
 
 ```
 ?-    mark
     %payload
-  ?.  (is-whitelisted:wl-lib src.bowl whitelist.state bowl)
+  ?.  (is-allowed:wl-lib src.bowl whitelist.state bowl)
     :: Reject request: not on whitelist.
     ::
     `this
@@ -54,7 +54,7 @@ If your app state contains a `whitelist` as recommended, an example code snippet
   ?>  (team:title our.bowl src.bowl)
   =^  cards  whitelist.state
   %:  handle-command:wl-lib
-      !<(whitelist-command:wl vase)
+      !<(command:wl vase)
       whitelist.state
       ~
       bowl
@@ -101,7 +101,7 @@ To modify it to kick on `/client-path`:
   ?>  (team:title our.bowl src.bowl)
   =^  cards  whitelist.state
   %:  handle-command:wl-lib
-      !<(whitelist-command:wl vase)
+      !<(command:wl vase)
       whitelist.state
       [~ /client-path]
       bowl

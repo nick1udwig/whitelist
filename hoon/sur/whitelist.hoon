@@ -1,25 +1,25 @@
-/-  resource
+/-  r=resource
 |%
 +$  whitelist
   $:  public=?
       kids=?
       users=(set ship)
-      groups=(set resource:resource)
+      groups=(set resource:r)
   ==
 ::
-+$  whitelist-target
++$  target
   $%  [%public ~]
       [%kids ~]
       [%users users=(set ship)]
       [%groups groups=(set resource:resource)]
   ==
 ::
-+$  whitelist-command
-  $%  [%add-whitelist wt=whitelist-target]
-      [%remove-whitelist wt=whitelist-target]
++$  command
+  $%  [%add-whitelist wt=target]
+      [%remove-whitelist wt=target]
   ==
 ::
-+$  whitelist-return
++$  return
   $:  cards=(list card:agent:gall)
       =whitelist
   ==
