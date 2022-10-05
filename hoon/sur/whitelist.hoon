@@ -42,7 +42,7 @@
   $:  =sig:ps
       proprietor-address=@ux
       escrow-rice=@ux
-      now=@da
+      timestamp=@da
       fee-schedule
   ==
 ::
@@ -56,12 +56,27 @@
 +$  receipts-by-service
   (map service-name=@tas receipts)
 +$  receipts
-  (map tx-hash=@ux customer-action)
+  (map tx-hash=@ux receipt)
++$  receipt
+  $:  =sig:ps
+      customer-ship-pubkey=@
+      customer-address=@ux
+      proprietor-ship-pubkey=@
+      =signed-fee-schedule
+      payment-tx-hash=@ux
+      payment-timestamp=@da
+  ==
 ::
 +$  customer-action
   $%  [%mint-nft =sig:ps address=@ux tx-hash=@ux service-name=@tas]
-      [%purchase =sig:ps address=@ux tx-hash=@ux service-name=@tas]
-      [%withdraw =sig:ps address=@ux tx-hash=@ux]
+      $:  %purchase
+          =sig:ps
+          address=@ux
+          =signed-fee-schedule
+          tx-hash=@ux
+          service-name=@tas
+      ==
+      :: [%refund =sig:ps address=@ux tx-hash=@ux]
   ==
 +$  host-action
   $%  [%configure service-name=@tas proprietor-address=@ux =config]

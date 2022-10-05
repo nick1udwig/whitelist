@@ -206,6 +206,27 @@
         /[service-name]/(scot %ux q.u.previous)
       ~
   ::
+  ++  make-receipt-from-purchase
+    |=  [act=customer-action:wl timestamp=@da]
+    ^-  receipt:wl
+    ?>  ?=(%purchase -.act)
+    =/  customer-pubkey=@
+      =/  life=@ud
+        .^(@ud %j (scry:io %life /(scot %p src.bowl)))
+      .^(@ %j (scry:io %vein /(scot %ud life)))
+    =/  proprietor-pubkey=@
+      =/  life=@ud
+        .^(@ud %j (scry:io %life /(scot %p our.bowl)))
+      .^(@ %j (scry:io %vein /(scot %ud life)))
+    :*  sig.act
+        customer-pubkey
+        address.act
+        proprietor-pubkey
+        signed-fee-schedule.act
+        tx-hash.act
+        timestamp
+    ==
+  ::
   ++  handle-customer-action
     |=  act=customer-action:wl
     ^-  (quip card _state)
@@ -247,6 +268,9 @@
       =*  escrow-rice  escrow-rice.u.permission
       ?.  =(escrow-rice (need to-account.tx-act))
         ~|("%whitelist: tx must be to escrow address {<escrow-rice>}" !!)
+      =*  fs  +.config.u.permission
+      ?.  =(price-per-unit.fs amount.tx-act)  ::  TODO: generalize to multiple units
+        ~|("%whitelist: payment must exactly match price-per-unit" !!)
       =/  maybe-customer=(unit customer:wl)
         %.  service-name
         ~(get by (~(gut by customers) src.bowl ~))
@@ -256,11 +280,11 @@
           expiry.u.maybe-customer
         timestamp.u.e  ::  TODO: check for NFTs
       =/  expiry-addend=@dr  ::  TODO: generalize
-        =*  fs  +.config.u.permission
         ?>  ?=(%membership unit-description.fs)
         ?>  =(@dr unit-type.fs)
-        %+  mul  (slav %dr unit.fs)
-        (div amount.tx-act price-per-unit.fs)
+        (slav %dr unit.fs)
+        :: %+  mul  (slav %dr unit.fs)  ::  TODO: generalize to multiple units
+        :: (div amount.tx-act price-per-unit.fs)
       =/  new-expiry=@da  (add old-expiry expiry-addend)
       :-  %:  make-timer-cards
               new-expiry
@@ -278,7 +302,7 @@
         %+  ~(put by open-receipts)  service-name
         %+  %~  put  by
             (~(gut by open-receipts) service-name ~)
-        tx-hash  act
+        tx-hash  (make-receipt-from-purchase act timestamp)
       ::
           customers
         %+  ~(put by customers)  src.bowl
@@ -289,12 +313,10 @@
         ?~  maybe-customer  ~[[address.act tx-hash]]
         [[address.act tx-hash] history.u.maybe-customer]
       ==
+    ::
+      ::   %refund
       :: ~|  "%whitelist: {<-.act>} not yet implemented"
       :: !!
-    ::
-        %withdraw
-      ~|  "%whitelist: {<-.act>} not yet implemented"
-      !!
     ==
   ::
   ++  handle-host-action
