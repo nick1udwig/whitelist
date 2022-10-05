@@ -1,47 +1,77 @@
-/-  r=resource
+/-  ps=pairsign,
+    r=resource
 |%
 +$  versioned-state
   $%  state-0
 ==
-+$  state-0  [%0 =permissions =customers]
++$  state-0
+  $:  %0
+      =permissions
+      =customers
+      open-receipts=receipts-by-service
+      closed-receipts=receipts-by-service
+  ==
 ::
-+$  permissions
-  (map @tas permission)
++$  permissions  (map service-name=@tas permission)
 +$  permission
-  [address=@ux =config whitelist blacklist=(set @p)]
+  $:  proprietor-address=@ux
+      escrow-rice=@ux
+      =config
+      whitelist
+      blacklist=(set @p)
+  ==
 +$  config
-  $%  [%subscription cost-spec]
-      [%rent cost-spec]
+  $%  [%membership fee-schedule]
+      :: [%rent fee-schedule]  ::  TODO: rethink config/fee-schedule
   ==
 +$  whitelist
-  $:  public=?
-      kids=?
+  $:  allow-public=?
+      allow-kids=?
       whitelist=(set @p)
       whitelist-groups=(set resource:r)
   ==
-+$  cost-spec  [unit=@dr price-per-unit=@ud]  ::  TODO: specify unit of price?
++$  fee-schedule  ::  TODO: rethink config/fee-schedule
+  ::  $:  unit-description=@tas  ::  e.g., jobs, kBs, cpu-minutes, membership
+  $:  unit-description=%membership  ::  TODO: generalize
+      unit=@ta               ::  e.g., '1' , '1', '~m1'      , '~d30'
+      unit-type=?(@ud @dr)   ::  e.g., @ud , @ud, @dr        , @dr
+      price-per-unit=@ud
+      ::  price-units=@tas  ::  TODO: add; e.g., ZIG, DOGE, ...
+  ==
++$  signed-fee-schedule  ::  TODO: rethink config/fee-schedule
+  $:  =sig:ps
+      proprietor-address=@ux
+      escrow-rice=@ux
+      now=@da
+      fee-schedule
+  ==
 ::
-+$  customers  (map @p customer)
++$  customers  (map @p customer-by-service)
++$  customer-by-service
+  (map service-name=@tas customer)
 +$  customer
-  [address=@ux balance=@ud expiry=(each @dr @da)]  ::  TODO: do better with expiry: face & types?
+  [expiry=@da history=(list [address=@ux payment-tx=@ux])]  ::  TODO: do better with expiry: face & types?
+::   :: [address=@ux balance=@ud expiry=(each @dr @da)]  ::  TODO: do better with expiry: face & types?
 ::
-::  TODO: think more about %withdraw; introduces weirdness where provider should not remove
-::        entire balance from wallet, but is not restricted from doing so
++$  receipts-by-service
+  (map service-name=@tas receipts)
++$  receipts
+  (map tx-hash=@ux customer-action)
+::
 +$  customer-action
-  $%  [%register address=@ux]
-      [%mint-nft ~]
-      [%purchase ~]
-      [%withdraw amount=@ud]
+  $%  [%mint-nft =sig:ps address=@ux tx-hash=@ux service-name=@tas]
+      [%purchase =sig:ps address=@ux tx-hash=@ux service-name=@tas]
+      [%withdraw =sig:ps address=@ux tx-hash=@ux]
   ==
 +$  host-action
-  $%  [%configure app-name=@tas address=@ux =config]
-      [%add app-name=@tas type=?(%blacklist %whitelist) =target]
-      [%remove app-name=@tas type=?(%blacklist %whitelist) =target]
+  $%  [%configure service-name=@tas proprietor-address=@ux =config]
+      [%add service-name=@tas type=?(%blacklist %whitelist) =target]
+      [%remove service-name=@tas type=?(%blacklist %whitelist) =target]
   ==
 +$  target
   $%  [%public ~]
       [%kids ~]
-      [%users users=(set ship)]
-      [%groups groups=(set resource:resource)]
+      [%users users=(set @p)]
+      [%groups groups=(set resource:r)]
   ==
 --
