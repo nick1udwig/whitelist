@@ -18,7 +18,7 @@
 +$  card  card:agent:gall
 --
 ::
-=|  state-0:wl
+=|  proprietor-state-0:wl
 =*  state  -
 ::
 %-  agent:dbug

@@ -1,10 +1,10 @@
 /-  ps=pairsign,
     r=resource
 |%
-+$  versioned-state
-  $%  state-0
++$  versioned-proprietor-state
+  $%  proprietor-state-0
 ==
-+$  state-0
++$  proprietor-state-0
   $:  %0
       =permissions
       =customers
