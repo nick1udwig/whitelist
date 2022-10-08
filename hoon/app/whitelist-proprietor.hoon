@@ -12,6 +12,7 @@
     group,
     pairsign,
     verb,
+    whitelist,
     smart=zig-sys-smart,
     zigs=zig-contracts-lib-zigs
 |%
@@ -30,12 +31,32 @@
     def     ~(. (default-agent this %|) bowl)
     io      ~(. agentio bowl)
     ps-lib  ~(. pairsign bowl)
+    wl-lib  ~(. whitelist bowl)
 ::
-++  on-init   on-init:def
-++  on-save   on-save:def
-++  on-load   on-load:def
-++  on-agent  on-agent:def
 ++  on-fail   on-fail:def
+::
+++  on-init
+  ^-  (quip card _this)
+  =/  escrow-wheat-id=@ux  0x2222.2222  ::  TODO: put real value
+  :-  :_  ~
+      %+  ~(watch-our pass:io /wallet-tx-update)
+      %uqbar  /wallet/[dap.bowl]/tx-updates
+  %=  this
+      zigs-contract-ids
+    (~(put by *(map @ux @ux)) 0x0 zigs-wheat-id:smart)
+      escrow-contract-ids
+    (~(put by *(map @ux @ux)) 0x0 escrow-wheat-id)
+  ==
+::
+++  on-save   !>(state)
+::
+++  on-load
+  |=  old-vase=vase
+  ^-  (quip card _this)
+  =+  !<(old=versioned-proprietor-state:wl old-vase)
+  ?-  -.old
+    %0  `this(state old)
+  ==
 ::
 ++  on-leave
   |=  p=path
@@ -44,6 +65,97 @@
     [%customer ~]              `this
     [%get-fee-schedule @ @ ~]  `this
     [%expiry @ @ ~]            `this
+  ==
+::
+++  on-agent
+  |=  [w=wire =sign:agent:gall]
+  ^-  (quip card _this)
+  ?+    w  (on-agent:def w sign)
+      [%wallet-tx-update ~]
+    ~&  %wallet-tx-update
+    ?+    -.sign  (on-agent:def w sign)
+        %kick
+      :_  this
+      :_  ~
+      %+  ~(watch-our pass:io w)
+      %uqbar  /wallet/[dap.bowl]/tx-updates
+    ::
+        %fact
+      =+  !<(update=wallet-update:wallet q.cage.sign)
+      ~&  %wallet-update
+      ~&  update
+      =*  my-address  id.from.shell.egg.update
+      =*  hash        `@ux`hash.update
+      ?.  ?=(%tx-status -.update)    `this
+      ?.  ?=(%noun -.action.update)  `this
+      =*  tx-noun  +.action.update
+      ?~  ledger-rice-id=(~(get by pending-txs) tx-noun)
+        `this
+      :_  %=  this
+              pending-txs  (~(del by pending-txs) tx-noun)
+          ==
+      :+  ::  watch for transaction to appear on chain
+          %+  %~  watch-our  pass:io
+              :-  %configure
+              /(scot %ux hash)/(scot %ux u.ledger-rice-id)
+          %uqbar  /indexer/[dap.bowl]/egg/0x0/(scot %ux hash)  ::  TODO: hardcode
+        ::  sign payment, sending to %sequencer
+        %+  ~(poke-our pass:io /purchase/tx-to-chain)  %uqbar
+        :-  %zig-wallet-poke
+        !>  ^-  wallet-poke:wallet
+        :^    %submit
+            from=my-address
+          hash=hash.update
+        gas=[rate=1 budget=1.000.000]  ::  TODO: hardcode
+      ~
+    ==
+  ::
+      [%configure @ @ ~]
+    =/  tx-hash=@ux         (slav %ux i.t.w)
+    =/  ledger-rice=@ux  (slav %ux i.t.t.w)
+    ?+    -.sign  (on-agent:def w sign)
+        %kick
+      :_  this
+      :_  ~
+      %+  ~(watch-our pass:io w)
+      %uqbar  /indexer/[dap.bowl]/egg/0x0/(scot %ux tx-hash)  ::  TODO: hardcode
+    ::
+        %fact
+      =+  !<(egg-update=update:ui q.cage.sign)
+      ?~  egg-update
+        ~|  "%whitelist-proprietor: got empty egg on {<w>}"
+        !!
+      =/  [egg=(unit egg:smart) town-id=(unit @ux)]
+        ?+    -.egg-update  [~ ~]
+            %newest-egg
+          [`egg.egg-update `town-id.location.egg-update]
+        ::
+            %egg
+          ?~  e=(~(get by eggs.egg-update) tx-hash)  [~ ~]
+          [`egg.u.e `town-id.location.u.e]
+        ==
+      ?~  egg  ~|("%whitelist-proprietor: expected update type %(newest-)egg, got {<egg-update>}" !!)
+      ?>  ?=(^ town-id)
+      =*  escrow-contract  contract.shell.u.egg
+      =+  .^  =update:ui
+              %gx
+              %+  scry:io  %uqbar
+              %+  weld
+                /indexer/newest/holder/(scot %ux u.town-id)
+              /(scot %ux escrow-contract)/noun
+          ==
+      ?~  update
+        ~|  "%whitelist-proprietor: got empty holder on {<w>} town {<town-id>} contract {<escrow-contract>}"
+        !!
+      ?.  ?=(%grain -.update)
+        ~|  "%whitelist-proprietor: expected holder update type %grain, got {<update>}"
+        !!
+      ?~  gs=(~(get ja grains.update) ledger-rice)
+        ~|  "%whitelist-proprietor: did not find expected ledger grain {<ledger-rice>}  in {<update>}"
+        !!
+      ::  TODO: check ledger is as expected
+      `this
+    ==
   ==
 ::
 ++  on-arvo
@@ -77,12 +189,13 @@
   ^-  (quip card _this)
   ?+    p  (on-watch:def p)
       [%expiry @ @ ~]  `this
-      [%customer ~]  ::  TODO: to remote scry
+      ?([%customer ~] [%customer-by-service ~]) ::  TODO: to remote scry
     :_  this
     %-  fact-init-kick:io
-    :-  %whitelist-customer
-    !>  ^-  (unit customer-by-service:wl)
-    (~(get by customers) src.bowl)
+    :-  %whitelist-proprietor-update
+    !>  ^-  proprietor-update:wl
+    ?~  c=(~(get by customers) src.bowl)  ~
+    [%customer-by-service u.c]
   ::
       [%services ~]  ::  TODO: to remote scry; make public/private list so services need not be public?
     :_  this
@@ -98,20 +211,24 @@
       ~|("%whitelist: src ({<src>}) must be src.bowl ({<src.bowl>})" !!)
     ?~  permission=(~(get by permissions) service-name)
       ~|("%whitelist: could not find service {<service-name>}" !!)
+    =*  p-address     proprietor-address.u.permission
+    =*  town-id       town-id.u.permission
     =*  e-rice        escrow-rice.u.permission
     =*  fee-schedule  +.config.u.permission
-    =*  p-address     proprietor-address.u.permission
-    =/  message=@  (jam [e-rice now.bowl fee-schedule])
+    =/  message=@
+      (sham [town-id e-rice now.bowl fee-schedule])
     =/  =sig:ps  (sign:ps-lib p-address message)
     %-  fact-init-kick:io
-    :-  %whitelist-fee-schedule
-    !>  ^-  signed-fee-schedule:wl
-    [sig p-address e-rice now.bowl fee-schedule]
+    :-  %whitelist-proprietor-update
+    !>  ^-  proprietor-update:wl
+    :-  %fee-schedule
+    [sig p-address town-id e-rice now.bowl fee-schedule]
   ==
 ::
 ++  on-peek
   |=  p=path
   |^  ^-  (unit (unit cage))
+  ?:  =(/x/dbug/state p)  ``[%noun !>(`_state`state)]
   ?+    p  (on-peek:def p)
       [%is-allowed @ @ ~]  ::  TODO: prepare for remote scry
     =/  service-name=@tas  i.t.p
@@ -164,15 +281,17 @@
   |=  [m=mark v=vase]
   |^  ^-  (quip card _this)
   ?+    m  (on-poke:def m v)
-      %whitelist-customer-action
+    ::  TODO: %set-zigs-contract-id & %..escrow..
+      %whitelist-customer-to-proprietor-action
     =^  cards  state
-      (handle-customer-action !<(customer-action:wl v))
+      %-  handle-customer-to-proprietor-action
+      !<(customer-to-proprietor-action:wl v)
     [cards this]
   ::
-      %whitelist-host-action
+      %whitelist-proprietor-action
     ?>  (team:title our.bowl src.bowl)
     =^  cards  state
-      (handle-host-action !<(host-action:wl v))
+      (handle-proprietor-action !<(proprietor-action:wl v))
     [cards this]
   ==
   ::
@@ -206,29 +325,8 @@
         /[service-name]/(scot %ux q.u.previous)
       ~
   ::
-  ++  make-receipt-from-purchase
-    |=  [act=customer-action:wl timestamp=@da]
-    ^-  receipt:wl
-    ?>  ?=(%purchase -.act)
-    =/  customer-pubkey=@
-      =/  life=@ud
-        .^(@ud %j (scry:io %life /(scot %p src.bowl)))
-      .^(@ %j (scry:io %vein /(scot %ud life)))
-    =/  proprietor-pubkey=@
-      =/  life=@ud
-        .^(@ud %j (scry:io %life /(scot %p our.bowl)))
-      .^(@ %j (scry:io %vein /(scot %ud life)))
-    :*  sig.act
-        customer-pubkey
-        address.act
-        proprietor-pubkey
-        signed-fee-schedule.act
-        tx-hash.act
-        timestamp
-    ==
-  ::
-  ++  handle-customer-action
-    |=  act=customer-action:wl
+  ++  handle-customer-to-proprietor-action
+    |=  act=customer-to-proprietor-action:wl
     ^-  (quip card _state)
     ?-    -.act
         %mint-nft
@@ -281,7 +379,7 @@
         timestamp.u.e  ::  TODO: check for NFTs
       =/  expiry-addend=@dr  ::  TODO: generalize
         ?>  ?=(%membership unit-description.fs)
-        ?>  =(@dr unit-type.fs)
+        ?>  =(%dr unit-type.fs)
         (slav %dr unit.fs)
         :: %+  mul  (slav %dr unit.fs)  ::  TODO: generalize to multiple units
         :: (div amount.tx-act price-per-unit.fs)
@@ -302,7 +400,8 @@
         %+  ~(put by open-receipts)  service-name
         %+  %~  put  by
             (~(gut by open-receipts) service-name ~)
-        tx-hash  (make-receipt-from-purchase act timestamp)
+          tx-hash
+        (make-receipt-from-purchase:wl-lib act timestamp)
       ::
           customers
         %+  ~(put by customers)  src.bowl
@@ -313,44 +412,101 @@
         ?~  maybe-customer  ~[[address.act tx-hash]]
         [[address.act tx-hash] history.u.maybe-customer]
       ==
-    ::
-      ::   %refund
-      :: ~|  "%whitelist: {<-.act>} not yet implemented"
-      :: !!
     ==
   ::
-  ++  handle-host-action
-    |=  act=host-action:wl
+  ++  handle-proprietor-action
+    |=  act=proprietor-action:wl
     ^-  (quip card _state)
     =/  permission=(unit permission:wl)
       (~(get by permissions) service-name.act)
     |^
     ::  TODO: on %config, request to contract to set up escrow wallet & watch contract
-    :-  ~
-    %=  state
-        permissions
-      %+  ~(put by permissions)  service-name.act
-      ?-    -.act
+    ?-    -.act
+        ?(%add %remove)
+      :-  ~
+      %=  state
+          permissions
+        %+  ~(put by permissions)  service-name.act
+        ?-  -.act
           %add     (handle-add act)
           %remove  (handle-remove act)
-          %configure
-        ?^  permission
-          %=  u.permission
-              proprietor-address  proprietor-address.act
-              config              config.act
-          ==
-        =|  p=permission:wl
-        %=  p
-            proprietor-address  proprietor-address.act
-            config              config.act
-            allow-public        %.n
-            allow-kids          %.n
         ==
       ==
+    ::
+        %configure
+      ?^  permission
+        ~|  "%whitelist-proprietor: changing config not yet enabled"
+        !!
+      =/  zigs-contract-id=(unit @ux)
+        (~(get by zigs-contract-ids) town-id.act)
+      ?~  zigs-contract-id
+        ~|  "%whitelist-proprietor: set zigs contract id for town {<town-id.act>} and try again"
+        !!
+      =/  escrow-contract-id=(unit @ux)
+        (~(get by escrow-contract-ids) town-id.act)
+      ?~  escrow-contract-id
+        ~|  "%whitelist-proprietor: set escrow contract id for town {<town-id.act>} and try again"
+        !!
+      =/  salt=@
+        (cat 3 (scot %ux my-address.act) service-name.act)
+      =/  ledger-rice=@ux
+        %:  fry-rice:smart
+            u.escrow-contract-id
+            u.escrow-contract-id
+            town-id.act
+            salt
+        ==
+      =/  escrow-rice=@ux
+        %:  fry-rice:smart
+            u.zigs-contract-id
+            u.escrow-contract-id
+            town-id.act
+            salt
+        ==
+      =/  tx-noun
+        :-  %noun
+        :^    %proprietor-register-service
+            service-name.act
+          u.zigs-contract-id
+        `@ux`'zigs-metadata'  ::  TODO: hardcoded for zigs
+      :_  %=  state
+              pending-txs
+            %+  ~(put by pending-txs)  +.tx-noun
+            ledger-rice
+          ::
+              permissions
+            %+  ~(put by permissions)  service-name.act
+            :: ?^  permission
+            ::   %=  u.permission
+            ::       proprietor-address  my-address.act
+            ::       config              config.act
+            ::   ==
+            =|  p=permission:wl
+            %=  p
+                proprietor-address  my-address.act
+                town-id             town-id.act
+                ledger-rice         ledger-rice
+                escrow-rice         escrow-rice
+                config              config.act
+                allow-public        %.n
+                allow-kids          %.n
+            ==
+          ==
+      :_  ~
+      %+  %~  poke-our  pass:io
+          /configure/(scot %ux my-address.act)
+        %uqbar
+      :-  %zig-wallet-poke
+      !>  ^-  wallet-poke:wallet
+      :-  %transaction
+      :^    from=my-address.act
+          contract=u.escrow-contract-id
+        town=town-id.act
+      action=tx-noun
     ==
     ::
     ++  handle-add
-      |=  act=host-action:wl
+      |=  act=proprietor-action:wl
       ^-  permission:wl
       ?~  permission
         ~|  "%whitelist: did not find service {<service-name.act>}"
@@ -384,7 +540,7 @@
       ==
     ::
     ++  handle-remove
-      |=  act=host-action:wl
+      |=  act=proprietor-action:wl
       ^-  permission:wl
       ?~  permission
         ~|  "%whitelist: did not find service {<service-name.act>}"

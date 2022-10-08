@@ -1,7 +1,9 @@
 /-  ps=pairsign
 /+  ethereum,
-    io=agentio
+    agentio
 |_  =bowl:gall
++*  io  ~(. agentio bowl)
+::
 ++  sign
   |=  [address=@ux message=@]
   ^-  sig:ps
@@ -66,10 +68,14 @@
     ^-  ecdsa-sig:ps
     .^  ecdsa-sig:ps
         %gx
-        %+  scry:io  %uqbar
+        %+  scry:io  %wallet
         %+  weld
-          /wallet/sign-message/(scot %ux address)
+          /sign-message/(scot %ux address)
         /(scot %ud message)/noun
+        :: %+  scry:io  %uqbar  ::  TODO: need unified wallet scry type for %uqbar
+        :: %+  weld
+        ::   /wallet/sign-message/(scot %ux address)
+        :: /(scot %ud message)/noun
     ==
   ::
   ++  is-sig-valid

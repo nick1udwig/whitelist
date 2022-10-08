@@ -51,6 +51,7 @@
   ++  proprietor-service-finished-cord
     ^-  cord
     %:  rap
+        3
         '''
         [
           {"ledger-rice": "ux"},
@@ -83,6 +84,7 @@
   ++  proprietor-contest-customer-refund-cord
     ^-  cord
     %:  rap
+        3
         '''
         [
           {"ledger-rice": "ux"},
@@ -97,6 +99,7 @@
   ++  customer-refund-cord
     ^-  cord
     %:  rap
+        3
         '''
         [
           {"now": "da"},
@@ -142,7 +145,7 @@
            {"p": "ux"},
            {"q": "p"},
            {"r": "ud"}
-        ],
+        ]
       },
       {
         "q": [

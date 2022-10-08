@@ -1,4 +1,4 @@
-/+  *zig-sys-smart
+:: /+  *zig-sys-smart
 /=  escrow  /lib/zig/contracts/lib/escrow
 =,  escrow
 |_  =cart

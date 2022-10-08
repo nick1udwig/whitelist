@@ -1,14 +1,14 @@
 /-  wl=whitelist
 ::
-|_  customer=(unit customer:wl)
+|_  =customer-action:wl
 ++  grab
   |%
-  ++  noun  (unit customer:wl)
+  ++  noun  customer-action:wl
   --
 ::
 ++  grow
   |%
-  ++  noun  customer
+  ++  noun  customer-action
   --
 ::
 ++  grad  %noun
