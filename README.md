@@ -1,8 +1,82 @@
 # Whitelist
 
-Restrict access to your provider Gall app with these plug-in library and types.
+Restrict access to your provider Gall app.
+
+## Uqbar protocol (TODO: clean this up)
+
+The Uqbar-connected-portion of this repo consists of three pieces:
+
+1. A smart contract running on the Uqbar rollup.
+   The contract manages escrow wallets that customers pay in to, only releasing funds once, e.g., the membership period is over.
+   Escrowing funds provides customers with some recourse if a proprietor is not holding up their deal of the bargain, or if the service provided is not what the customer expected.
+   Each proprietor has one escrow ZIG rice ID per service, and one ledger rice ID.
+   The ledger rice ID has two numbers: assets and liabilities.
+   When payment is received, assets and liabilities are both increased by the payment amount.
+   Once a membership is completed, liabilities is reduced by the payment amount for that membership.
+   Only the difference of `(sub assets liabilities)` can be withdrawn by a proprietor, as the rest of the funds may need to available for refunds to customers.
+   TODO: enable arbitrary fungible tokens.
+2. A Gall app running on the proprietor's ship.
+   The proprietor Gall app tracks customer state and serves as a storefront for the proprietor.
+   Prices for services are advertised, and customers can interact with the app to purchase access to those services.
+   The app will handle unlocking funds held in escrow once the services have been provided.
+   The app will also handle customer refund requests.
+3. A Gall app running on the customer's ship.
+   The customer Gall app tracks a customer's membership/service state with proprietors and automates the protcol for purchasing services.
+
+### Step-by-step description of the protocol for a membership/subscription
+
+Imagine a proprietor wishes to gate access to a blog, like an Urbit version of Substack.
+The protocol below describes how the suite of apps in this repo allows a customer to create a membership.
+It also describes how a customer can request a refund.
+
+1. Customer queries proprietor for fee schedule of service.
+2. Proprietor responds with signed fee schedule and escrow wallet rice ID.
+3. Customer checks that rice ID is held by the smart contract and sends payment.
+   Payment is some whole-number multiple of the price in the fee schedule (e.g., if the fee schedule is 1 ZIG per month, a valid payment is 1, 2, 3, ... ZIGs).
+4. Contract adds assets and liabilities equal to the payment to the proprietor's account rice.
+   Only `(sub assets liabilities)` can be withdrawn by the proprietor.
+5. Customer sends signed transaction hash to proprietor.
+6. Proprietor starts service upon receipt and confirmation of payment by customer.
+7. 1. In simplest case, once membership period has expired, proprietor sends customer-signed-transaction-hash to contract.
+      Contract confirms customer signature and proper time has elapsed, then reduces liabilities by amount paid for that period.
+   2. 1.  However, if customer is unsatisfied with service, can initiate a refund request by sending customer-signed-transaction-hash to contract.
+      2. Provider has some period (`~h1`? `~d1`?) to produce same customer-signed-transaction-hash to contract.
+         There are three cases to consider:
+         1. Provider does not produce signature.
+            Then customer gets a 100% refund.
+            Prevents customer from losing money if a provider was never online.
+         2. Provider produces signature that matches customer.
+            Customer gets refund proportional to the amount of time that has passed relative to the total subscription period.
+         3. Provider produces valid signature that differs from customer.
+            Customer attempted to cheat by making a new signature.
+            Customer receives nothing.
+
+The protocol described above favors proprietors, and customers can lose money to evil proprietors.
+It is challenging to stop evil proprietors, since they can scam entirely outside the protocol, e.g. stopping producing content.
+Thus, customers should choose proprietors judiciously.
+To gain customer trust, it is recommended for proprietors to offer a free trial period, enabled by this app. (TODO: make setting up free trial easy).
 
 ## The `whitelist` type
+
+TODO: rewrite these docs.
+The repo is now dedicated to a Gall app, not a library.
+As such, the docs below are out of date.
+Rather than, e.g., placing a
+```hoon
+?.  (is-allowed foo)
+  ~|("not allowed!" !!)
+::  do allowed stuff
+```
+within the app/service you wish to gate, usage will now look something like
+```hoon
+?.  .^  ?
+        %gx
+        %+  scry:agentio  %whitelist
+        /is-allowed/my-substack/(scot %p user)
+    ==
+  ~|("not allowed!" !!)
+::  do allowed stuff
+```
 
 The `whitelist` type contains two `?`s: `public` and `kids`, and two `set`s: `users` and `groups`.
 
